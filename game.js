@@ -606,26 +606,26 @@
     if (!rawDt || rawDt <= 0) return;
     const instant = clamp(1 / rawDt, 1, 144);
     currentFps = lerp(currentFps || instant, instant, .08);
-    performanceMonitor.average = lerp(performanceMonitor.average || instant, instant, .045);
+    performanceMonitor.average = lerp(performanceMonitor.average || instant, instant, .12);
     performanceMonitor.cooldown = Math.max(0, performanceMonitor.cooldown - rawDt);
     if (performanceMonitor.cooldown > 0) {
       updatePerformanceHud();
       return;
     }
-    if (performanceMonitor.average < 44 && qualityLevel !== 'low') {
+    if (performanceMonitor.average < 54 && qualityLevel !== 'low') {
       performanceMonitor.lowFrames += 1;
       performanceMonitor.highFrames = 0;
-      if (performanceMonitor.lowFrames > 90) {
+      if (performanceMonitor.lowFrames > 35) {
         setQuality(qualityLevel === 'high' ? 'medium' : 'low', 'fps');
-        performanceMonitor.cooldown = 8;
+        performanceMonitor.cooldown = 4;
         performanceMonitor.lowFrames = 0;
       }
-    } else if (performanceMonitor.average > 58 && qualityLevel !== 'high') {
+    } else if (performanceMonitor.average > 59 && qualityLevel !== 'high') {
       performanceMonitor.highFrames += 1;
       performanceMonitor.lowFrames = 0;
-      if (performanceMonitor.highFrames > 420) {
+      if (performanceMonitor.highFrames > 520) {
         setQuality(qualityLevel === 'low' ? 'medium' : 'high', 'fps+');
-        performanceMonitor.cooldown = 10;
+        performanceMonitor.cooldown = 14;
         performanceMonitor.highFrames = 0;
       }
     } else {
