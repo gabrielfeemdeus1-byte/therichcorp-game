@@ -494,6 +494,7 @@
     dailyCoinsCollected: 0,
     pendingRichBucksOrder: null,
     playerPosition: null,
+    onboardingSeen: false,
     freeCoinMissions: { claimed: {}, opened: {}, dailyCheckinAt: null },
     farmMissions: { claimed: {}, dailyRouteAt: null },
     dailyLearning: { stage: 0, availableAt: null, rewardReady: false, cyclesCompleted: 0, answers: [null, null, null] },
@@ -810,6 +811,7 @@
       next.dailyCoinsCollected = clamp(Math.floor(Number(next.dailyCoinsCollected) || 0), 0, DAILY_COIN_COUNT);
       next.dailyCycleNumber = Math.max(0, Math.floor(Number(next.dailyCycleNumber) || 0));
       next.richBucks = Math.max(0, Math.floor(Number(next.richBucks) || 0));
+      next.onboardingSeen = Boolean(supplied.onboardingSeen);
       next.pendingRichBucksOrder = typeof supplied.pendingRichBucksOrder === 'string' && supplied.pendingRichBucksOrder.length <= 160
         ? supplied.pendingRichBucksOrder
         : null;
@@ -1173,6 +1175,34 @@
     return null;
   }
 
+  function buildingById(id) {
+    return buildings.find((building) => building.id === id) || null;
+  }
+
+  function objectiveFromBuilding(id, title, detail) {
+    const building = buildingById(id);
+    return building ? { x: building.door.x, y: building.door.y, title, detail, kind: 'building', id } : null;
+  }
+
+  function getPrimaryObjective() {
+    const activeCoin = getActiveCoin();
+    const activeMissionObjective = getActiveMissionObjective();
+    if (!saved.rickIntroduced) return { ...rick, title: 'Fale com Rick', detail: 'Ele inicia sua jornada e explica como ganhar Rich Coins.' };
+    if (activeCoin) return { ...activeCoin, title: activeCoin.stage === 'daily-reward' ? 'Colete sua recompensa' : `Colete Rich Coin ${activeCoin.order}/${activeCoin.total}`, detail: activeCoin.stage === 'daily-reward' ? `+${DAILY_LEARNING_REWARD.coins} Rich Coins no centro do mapa.` : 'Aprenda a coletar moedas caminhando até o brilho dourado.' };
+    if (!hasDigital01()) return objectiveFromBuilding('content', 'Desbloqueie Digital 01', 'Use suas moedas iniciais em Conteúdos.');
+    if (!hasDigital02()) return objectiveFromBuilding('lab', 'Desbloqueie Digital 02', 'Entre no Digital Lab para abrir novos distritos.');
+    if (!saved.missions.prospectionStarted) return objectiveFromBuilding('prospection', 'Inicie Prospecção', 'Aprenda a encontrar oportunidades reais.');
+    if (activeMissionObjective) return { ...activeMissionObjective, title: activeMissionObjective.kind === 'challenge-signal' ? `Ponto do Desafio ${activeMissionObjective.order}/${activeMissionObjective.total}` : `Sinal de Oportunidade ${activeMissionObjective.order}/${activeMissionObjective.total}`, detail: 'Caminhe até o marcador e pressione E.' };
+    if (!saved.missions.challengeStarted && hasCompletedProspection()) return objectiveFromBuilding('challenges', 'Inicie Desafios', 'Transforme o que aprendeu em decisão prática.');
+    if (isDailyLearningAvailable()) {
+      const destination = getDailyLearningDestination();
+      return objectiveFromBuilding(destination.buildingId, `Ciclo diário ${getDailyLearning().stage + 1}/3`, 'Conclua uma missão curta de aprendizado para farmar Rich Coins.');
+    }
+    if (hasDigital03() && !getMentorshipAccess('pdfs').unlocked) return objectiveFromBuilding('hq', 'Conheça as mentorias', 'Veja Rich Starter e as trilhas premium da TheRichCorp.');
+    if (hasDigital03()) return objectiveFromBuilding('hq', 'Volte à sede', 'Revise mentorias e próximos passos.');
+    return null;
+  }
+
   function formatRemaining(ms) {
     const remaining = Math.max(0, ms);
     const hours = Math.floor(remaining / (60 * 60 * 1000));
@@ -1218,6 +1248,19 @@
       running = true;
       lastFrame = performance.now();
       requestAnimationFrame(loop);
+      if (!saved.rickIntroduced && !saved.onboardingSeen) {
+        saved.onboardingSeen = true;
+        persist();
+        window.setTimeout(() => {
+          if (!dialogueState && running) {
+            openDialogue([
+              { speaker: 'RICK', portrait: 'R', text: 'Gabriel, bem-vindo à The Rich City. Antes de coletar moedas ou abrir prédios, venha falar comigo em frente à sede.' },
+              { speaker: 'RICK', portrait: 'R', text: 'Siga a trilha dourada no chão. Se eu estiver fora da tela, a seta dourada mostra a direção. Chegando perto, pressione E.' },
+            ]);
+            updateHud();
+          }
+        }, 550);
+      }
     }, 1250);
   }
 
@@ -1595,7 +1638,10 @@
     updateHud();
     showToast(`+${reward.coins} Rich Coins  ·  +${reward.xp} XP`);
     if (completedInitialNow) {
-      openDialogue([{ speaker: 'THE RICH CITY', portrait: 'R', text: 'Tutorial concluído. Você aprendeu a coletar Rich Coins e somar na carteira. Agora, as Rich Coins de verdade vêm jogando ciclos de aprendizado.' }]);
+      openDialogue([
+        { speaker: 'THE RICH CITY', portrait: 'R', text: 'Tutorial concluído. Você aprendeu a coletar Rich Coins e somar na carteira.' },
+        { speaker: 'RICK', portrait: 'R', text: 'Agora começa o jogo de verdade: vá até Conteúdos. O Digital 01 mostra como uma oferta simples pode virar dinheiro na internet.' },
+      ]);
     } else if (coin.stage === 'daily-reward') {
       openDialogue([{ speaker: 'THE RICH CITY', portrait: 'R', text: `Recompensa coletada. O próximo Ciclo Diário de Aprendizado libera em ${formatRemaining(DAY_MS)}.` }]);
     }
@@ -1700,10 +1746,12 @@
         ? [
             { speaker: 'DESAFIOS', portrait: 'R', text: 'Leitura perfeita. Você encontrou evidência, desenhou um teste pequeno e decidiu pela validação comercial.' },
             { speaker: 'DESAFIOS', portrait: 'R', text: 'Título conquistado: Caçador de Oportunidades. O bônus e o Digital 03 foram liberados em Conteúdos.' },
+            { speaker: 'RICK', portrait: 'R', text: 'Se isso fez sentido, a Rich Starter é o próximo passo: ela transforma essa lógica em um plano simples para vender PDFs e ofertas digitais.' },
           ]
         : [
             { speaker: 'DESAFIOS', portrait: 'R', text: 'Desafio concluído. Você combinou observação, decisão e execução — e transformou conhecimento em evolução mensurável.' },
             { speaker: 'DESAFIOS', portrait: 'R', text: 'O Digital 03 foi liberado em Conteúdos. Revise o Radar de Oportunidades quando quiser reforçar o método.' },
+            { speaker: 'RICK', portrait: 'R', text: 'Agora você já entendeu a base. Continue o ciclo diário para juntar Rich Coins e liberar a Rich Starter, ou conheça as mentorias premium na sede.' },
           ]);
     }
   }
@@ -1712,10 +1760,11 @@
     const collected = saved.initialCoinsCollected;
     const pages = !saved.rickIntroduced
       ? [
-          { speaker: 'RICK', portrait: 'R', text: 'Bem-vindo à The Rich City. Aqui, cada caminho leva a uma escolha — e cada escolha pode virar evolução.' },
-          { speaker: 'RICK', portrait: 'R', text: collected >= INITIAL_COIN_COUNT ? 'Excelente: você concluiu o ciclo inicial. Agora siga até Conteúdos; o conhecimento abre os próximos distritos.' : collected ? `Você já encontrou ${collected} de ${INITIAL_COIN_COUNT} Rich Coins. Continue seguindo os brilhos dourados pelas ruas.` : 'Comece pela Rich Coin que brilha na alameda abaixo da sede. Aproxime-se e pressione E para coletar.' },
+          { speaker: 'RICK', portrait: 'R', text: 'Bem-vindo à The Rich City. Aqui você não clica em cards: você caminha, investiga, aprende e transforma conhecimento em moedas.' },
+          { speaker: 'RICK', portrait: 'R', text: collected >= INITIAL_COIN_COUNT ? 'Excelente: você concluiu o ciclo inicial. Agora siga até Conteúdos; o conhecimento abre os próximos distritos.' : collected ? `Você já encontrou ${collected} de ${INITIAL_COIN_COUNT} Rich Coins. Continue seguindo a trilha dourada pelas ruas.` : 'Primeira missão: siga a trilha dourada até a Rich Coin na alameda. Aproxime-se e pressione E para coletar.' },
+          { speaker: 'RICK', portrait: 'R', text: 'Essas moedas iniciais são só o tutorial. O farm de verdade vem depois: missões de Digital, Prospecção e desafios que ensinam a vender na internet.' },
         ]
-      : [{ speaker: 'RICK', portrait: 'R', text: collected >= INITIAL_COIN_COUNT ? 'Você está no caminho certo. Visite Conteúdos: a próxima parte da sua evolução começa lá.' : `Continue pela rota dourada. Você já coletou ${collected} de ${INITIAL_COIN_COUNT} Rich Coins iniciais.` }];
+      : [{ speaker: 'RICK', portrait: 'R', text: collected >= INITIAL_COIN_COUNT ? 'Você está no caminho certo. Siga a seta até Conteúdos: a próxima parte da sua evolução começa lá.' : `Continue pela rota dourada. Você já coletou ${collected} de ${INITIAL_COIN_COUNT} Rich Coins iniciais.` }];
     saved.rickIntroduced = true;
     persist();
     updateHud();
@@ -1839,9 +1888,13 @@
     saved.knowledge.digital01 = true;
     persist();
     updateHud();
-    updateKnowledgePanel();
+    closeKnowledgePanel();
     playSound('reward');
     showToast('Digital 01 liberado · Digital Lab disponível');
+    openDialogue([
+      { speaker: 'DIGITAL 01', portrait: 'R', text: 'Você aprendeu o primeiro princípio: clareza vende mais que complexidade. Uma boa oferta começa com uma dor específica.' },
+      { speaker: 'RICK', portrait: 'R', text: 'Próximo passo: siga a seta até o Digital Lab para transformar essa ideia em estrutura de página e validação.' },
+    ]);
   }
 
   function openLabPanel() {
@@ -1891,9 +1944,13 @@
     saved.knowledge.digital02 = true;
     persist();
     updateHud();
-    updateLabPanel();
+    closeLabPanel();
     playSound('reward');
     showToast('Digital 02 liberado · Prospecção e Desafios ativos');
+    openDialogue([
+      { speaker: 'DIGITAL 02', portrait: 'R', text: 'Agora você entendeu a base de uma página que vende: promessa clara, benefício prático e chamada para ação.' },
+      { speaker: 'RICK', portrait: 'R', text: 'A cidade abriu Prospecção e Desafios. É aqui que conhecimento vira prática: encontrar dor real e testar uma solução.' },
+    ]);
   }
 
   function openLearningPanel(kind, index) {
@@ -3097,27 +3154,27 @@
       starterGoalBar.style.width = `${percent}%`;
     }
     if (!saved.rickIntroduced) {
-      questTitle.textContent = 'Encontre Rick em frente à sede.';
-      questDetail.textContent = 'Aproxime-se dele e pressione E para conversar.';
+      questTitle.textContent = '1º passo: fale com Rick.';
+      questDetail.textContent = 'Siga a trilha/seta dourada até o mentor em frente à sede. Chegue perto e pressione E.';
     } else if (!hasCompletedInitialRoute()) {
       const next = saved.initialCoinsCollected + 1;
       questTitle.textContent = `Colete Rich Coins · ${next}/${INITIAL_COIN_COUNT}.`;
-      questDetail.textContent = next === 1 ? 'A primeira brilha na alameda abaixo da sede.' : 'Siga o próximo brilho dourado somente pelas ruas da cidade.';
+      questDetail.textContent = next === 1 ? 'Siga a trilha dourada até a primeira moeda. Ela ensina como sua carteira evolui.' : 'A próxima moeda está marcada pela seta dourada. Caminhe somente pelas ruas.';
     } else if (!hasDigital01()) {
       questTitle.textContent = 'Desbloqueie o Digital 01.';
-      questDetail.textContent = `Caminhe até Conteúdos e use ${DIGITAL_01_COST} Rich Coins. As moedas iniciais são o tutorial; o farm diário libera depois do Digital 03.`;
+      questDetail.textContent = `Siga a seta até Conteúdos e invista ${DIGITAL_01_COST} Rich Coins para aprender sua primeira lógica de venda.`;
     } else if (!hasDigital02()) {
       questTitle.textContent = 'Desbloqueie o Digital 02.';
-      questDetail.textContent = `Caminhe até o Digital Lab e use ${DIGITAL_02_COST} Rich Coins para abrir novos distritos.`;
+      questDetail.textContent = `Vá ao Digital Lab. Essa etapa mostra como transformar ideia em página/oferta simples.`;
     } else if (!saved.missions.prospectionStarted) {
       questTitle.textContent = 'Inicie a rota de Prospecção.';
-      questDetail.textContent = 'Caminhe até o prédio roxo e pressione E para revelar o primeiro sinal de oportunidade.';
+      questDetail.textContent = 'Siga a seta até Prospecção. Você vai aprender a enxergar oportunidades reais de venda.';
     } else if (!hasCompletedProspection()) {
       questTitle.textContent = `Rota de Prospecção · ${saved.missions.prospectionSignals + 1}/${PROSPECTION_SIGNAL_COUNT}.`;
       questDetail.textContent = 'Siga o marcador azul pelas ruas. Leia, escolha sua análise e registre o aprendizado com E.';
     } else if (!saved.missions.challengeStarted) {
       questTitle.textContent = 'Desafio de Prospecção disponível.';
-      questDetail.textContent = 'Caminhe até o prédio vermelho e pressione E para iniciar a validação da sua estratégia.';
+      questDetail.textContent = 'Siga a seta até Desafios. Agora você aplica o método como se fosse um cliente real.';
     } else if (!hasCompletedChallenge()) {
       questTitle.textContent = `Desafio de Prospecção · ${saved.missions.challengeSignals + 1}/${CHALLENGE_SIGNAL_COUNT}.`;
       questDetail.textContent = 'Siga o marcador dourado pelas ruas, decida com setas ou WASD e confirme com E.';
@@ -3137,7 +3194,7 @@
       const remainingCoins = starter ? Math.max(0, starter.priceCoins - saved.coins) : 0;
       const estimatedDays = starterPlan.dailyTotal ? Math.ceil(remainingCoins / starterPlan.dailyTotal) : 0;
       questTitle.textContent = 'Meta: liberar a Rich Starter.';
-      questDetail.textContent = `Faça o ciclo diário de aprendizado, check-in e missões grátis. Faltam ${formatAmount(remainingCoins)} Rich Coins · cerca de ${estimatedDays} dia(s) no ritmo diário.`;
+      questDetail.textContent = `Você já entendeu a base. Farme o ciclo diário e libere a mentoria Starter. Faltam ${formatAmount(remainingCoins)} RC · cerca de ${estimatedDays} dia(s).`;
     } else if (!getUnlockedMentorships().length) {
       questTitle.textContent = 'Mentorias TheRichCorp disponíveis.';
       questDetail.textContent = 'Caminhe até a sede e pressione E para conhecer Rich Starter, Rich Silver, Rich Gold e Rich Diamond.';
@@ -3178,6 +3235,7 @@
     ctx.save();
     ctx.translate(-camera.x, -camera.y);
     drawStaticWorldCache();
+    drawObjectiveTrail(time);
     drawFreeCoinsTerminal(time);
     getVisibleBuildings().filter((b) => b.y < player.y - 35).forEach((b) => drawBuilding(b, time));
     drawRick(time);
@@ -3189,8 +3247,102 @@
     getVisibleBuildings().filter((b) => b.y >= player.y - 35).forEach((b) => drawBuilding(b, time));
     drawScenery('front', time);
     ctx.restore();
+    drawObjectiveCompass(time);
     drawAtmosphere(time);
     drawVignette(time);
+  }
+
+  function drawObjectiveTrail(time) {
+    if (dialogueState || knowledgePanelOpen || labPanelOpen || learningPanelOpen || mentorshipPanelOpen || bucksStoreOpen || freeCoinsPanelOpen) return;
+    const objective = getPrimaryObjective();
+    if (!objective) return;
+    const dx = objective.x - player.x;
+    const dy = objective.y - player.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 38) return;
+    const ux = dx / length;
+    const uy = dy / length;
+    const start = Math.min(74, Math.max(34, length * .12));
+    const end = Math.max(start, length - 48);
+    const visibleObjective = isWorldPointVisible(objective.x, objective.y, 140);
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (let step = start, index = 0; step < end; step += 64, index += 1) {
+      const x = player.x + ux * step;
+      const y = player.y + uy * step;
+      if (!isWorldPointVisible(x, y, 70)) continue;
+      const pulse = .55 + Math.sin(time * 4 + index * .7) * .22;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.atan2(uy, ux));
+      ctx.fillStyle = `rgba(247,199,70,${.22 + pulse * .18})`;
+      ctx.strokeStyle = `rgba(255,233,147,${.36 + pulse * .24})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(16, 0);
+      ctx.lineTo(-10, -8);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-10, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (visibleObjective) {
+      const pulse = .5 + Math.sin(time * 3.2) * .25;
+      const ring = ctx.createRadialGradient(objective.x, objective.y, 3, objective.x, objective.y, 96);
+      ring.addColorStop(0, 'rgba(255,214,92,.24)');
+      ring.addColorStop(.52, 'rgba(148,78,236,.12)');
+      ring.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = ring;
+      ctx.beginPath(); ctx.ellipse(objective.x, objective.y + 6, 94, 31, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = `rgba(255,216,100,${.6 + pulse * .3})`;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.ellipse(objective.x, objective.y + 8, 46 + pulse * 10, 15 + pulse * 3, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(6,7,13,.94)';
+      ctx.beginPath(); roundedRect(ctx, objective.x - 74, objective.y - 91, 148, 33, 10); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,213,98,.78)'; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = '#ffe18c'; ctx.font = '900 9px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('OBJETIVO', objective.x, objective.y - 80);
+      ctx.fillStyle = '#fff8dc'; ctx.font = '800 10px system-ui';
+      ctx.fillText(objective.title.toUpperCase().slice(0, 24), objective.x, objective.y - 67);
+    }
+    ctx.restore();
+  }
+
+  function drawObjectiveCompass(time) {
+    if (dialogueState || knowledgePanelOpen || labPanelOpen || learningPanelOpen || mentorshipPanelOpen || bucksStoreOpen || freeCoinsPanelOpen) return;
+    const objective = getPrimaryObjective();
+    if (!objective) return;
+    const sx = objective.x - camera.x;
+    const sy = objective.y - camera.y;
+    if (sx > 76 && sx < view.width - 76 && sy > 86 && sy < view.height - 76) return;
+    const cx = view.width / 2;
+    const cy = view.height / 2;
+    const angle = Math.atan2(sy - cy, sx - cx);
+    const edgeX = clamp(cx + Math.cos(angle) * (view.width / 2 - 66), 54, view.width - 54);
+    const edgeY = clamp(cy + Math.sin(angle) * (view.height / 2 - 72), 82, view.height - 58);
+    const meters = Math.max(1, Math.round(distance(player, objective) / 12));
+    const pulse = .5 + Math.sin(time * 3.4) * .22;
+    ctx.save();
+    ctx.translate(edgeX, edgeY);
+    ctx.fillStyle = 'rgba(7,7,14,.9)';
+    ctx.beginPath(); roundedRect(ctx, -64, -24, 128, 48, 14); ctx.fill();
+    ctx.strokeStyle = `rgba(255,210,84,${.55 + pulse * .3})`;
+    ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.fillStyle = '#ffd455';
+    ctx.shadowColor = '#ffd455'; ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(3, -10); ctx.lineTo(7, 0); ctx.lineTo(3, 10); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff4c2'; ctx.font = '900 9px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(objective.title.toUpperCase().slice(0, 18), 0, -5);
+    ctx.fillStyle = '#cbbdce'; ctx.font = '800 8px system-ui';
+    ctx.fillText(`${meters} passos`, 0, 10);
+    ctx.restore();
   }
 
   function isWorldRectVisible(x, y, width, height, margin = quality.cacheMargin) {
