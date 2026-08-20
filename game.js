@@ -2187,6 +2187,8 @@
     if (hasChoices) {
       learningQuestion.textContent = frame.question;
       learningChoices.replaceChildren(...frame.choices.map((choice, index) => {
+        const choiceTitle = typeof choice === 'string' ? choice : (choice.title || `Opção ${String.fromCharCode(65 + index)}`);
+        const choiceDetail = typeof choice === 'string' ? '' : (choice.detail || '');
         const button = document.createElement('button');
         const selected = index === frame.selected;
         button.id = `learning-choice-${index}`;
@@ -2203,10 +2205,11 @@
         const copy = document.createElement('span');
         copy.className = 'learning-choice-copy';
         const title = document.createElement('b');
-        title.textContent = choice.title;
+        title.textContent = choiceTitle;
         const detail = document.createElement('small');
-        detail.textContent = choice.detail;
-        copy.append(title, detail);
+        detail.textContent = choiceDetail;
+        copy.append(title);
+        if (choiceDetail) copy.append(detail);
         button.append(key, copy);
         return button;
       }));
@@ -3134,7 +3137,60 @@
     const page = dialogueState.pages[dialogueState.index];
     dialogueSpeaker.textContent = page.speaker;
     dialogueText.textContent = page.text;
-    dialoguePortrait.textContent = page.portrait;
+    renderDialoguePortrait(page);
+  }
+
+  function createPortraitNode(tag, className, text = '') {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
+
+  function getDialoguePortrait(page) {
+    const speaker = String(page?.speaker || '').toUpperCase();
+    const portrait = String(page?.portrait || '').trim().toUpperCase();
+    if (speaker.includes('RICK')) return { type: 'rick', label: 'Rick', mark: 'R' };
+    if (speaker.includes('DIGITAL') || speaker.includes('LAB')) return { type: 'digital', label: 'Digital Lab', mark: 'D' };
+    if (speaker.includes('CONTE')) return { type: 'content', label: 'Conteúdos', mark: 'C' };
+    if (speaker.includes('PROSPEC')) return { type: 'prospection', label: 'Prospecção', mark: 'P' };
+    if (speaker.includes('DESAF')) return { type: 'challenge', label: 'Desafios', mark: '!' };
+    if (speaker.includes('BUCK') || speaker.includes('LOJA')) return { type: 'bucks', label: 'Loja Rich Bucks', mark: 'B' };
+    if (speaker.includes('COIN')) return { type: 'coins', label: 'Rich Coins', mark: 'R$' };
+    if (speaker.includes('CITY') || speaker.includes('CORP') || speaker.includes('SEDE')) return { type: 'corp', label: 'The Rich Corp', mark: 'R' };
+    return { type: 'neutral', label: page?.speaker || 'Guia', mark: portrait || String(page?.speaker || 'G').charAt(0).toUpperCase() };
+  }
+
+  function renderDialoguePortrait(page) {
+    const avatar = getDialoguePortrait(page);
+    dialoguePortrait.className = `dialogue-portrait dialogue-portrait--${avatar.type}`;
+    dialoguePortrait.setAttribute('aria-label', `Retrato: ${avatar.label}`);
+    dialoguePortrait.replaceChildren();
+
+    const frame = createPortraitNode('span', 'dialogue-avatar');
+    frame.appendChild(createPortraitNode('span', 'avatar-glow'));
+
+    if (avatar.type === 'rick') {
+      const body = createPortraitNode('span', 'avatar-rick-body');
+      const head = createPortraitNode('span', 'avatar-rick-head');
+      head.append(
+        createPortraitNode('span', 'avatar-rick-hair'),
+        createPortraitNode('span', 'avatar-rick-brows'),
+        createPortraitNode('span', 'avatar-rick-eyes'),
+        createPortraitNode('span', 'avatar-rick-nose'),
+        createPortraitNode('span', 'avatar-rick-beard')
+      );
+      body.appendChild(createPortraitNode('span', 'avatar-rick-tie'));
+      frame.append(body, head);
+    } else {
+      frame.append(
+        createPortraitNode('span', 'avatar-sigil', avatar.mark),
+        createPortraitNode('span', 'avatar-orbit'),
+        createPortraitNode('span', 'avatar-orbit avatar-orbit--small')
+      );
+    }
+
+    dialoguePortrait.appendChild(frame);
   }
 
   function updateHud() {
@@ -3212,6 +3268,8 @@
   }
 
   function updateWorldLabels() {
+    document.querySelectorAll('.world-label').forEach((element) => { element.style.opacity = '0'; });
+    return;
     const labels = [
       ['.label-hq', buildings[0].x, buildings[0].y - 155], ['.label-lab', buildings[1].x, buildings[1].y - 120],
       ['.label-prospection', buildings[2].x, buildings[2].y - 120], ['.label-content', buildings[3].x, buildings[3].y - 123],
@@ -3300,13 +3358,17 @@
       ctx.strokeStyle = `rgba(255,216,100,${.6 + pulse * .3})`;
       ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.ellipse(objective.x, objective.y + 8, 46 + pulse * 10, 15 + pulse * 3, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = 'rgba(6,7,13,.94)';
-      ctx.beginPath(); roundedRect(ctx, objective.x - 74, objective.y - 91, 148, 33, 10); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,213,98,.78)'; ctx.lineWidth = 1.4; ctx.stroke();
-      ctx.fillStyle = '#ffe18c'; ctx.font = '900 9px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('OBJETIVO', objective.x, objective.y - 80);
-      ctx.fillStyle = '#fff8dc'; ctx.font = '800 10px system-ui';
-      ctx.fillText(objective.title.toUpperCase().slice(0, 24), objective.x, objective.y - 67);
+      ctx.fillStyle = `rgba(255,214,92,${.34 + pulse * .24})`;
+      ctx.beginPath();
+      ctx.moveTo(objective.x, objective.y - 67 - pulse * 5);
+      ctx.lineTo(objective.x + 12, objective.y - 48);
+      ctx.lineTo(objective.x + 5, objective.y - 48);
+      ctx.lineTo(objective.x + 5, objective.y - 34);
+      ctx.lineTo(objective.x - 5, objective.y - 34);
+      ctx.lineTo(objective.x - 5, objective.y - 48);
+      ctx.lineTo(objective.x - 12, objective.y - 48);
+      ctx.closePath();
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -3375,6 +3437,8 @@
     drawTerrainDetails(0);
     drawRoadNetwork();
     drawPlaza(0);
+    drawDistrictFoundations();
+    drawRoadsideDetails();
     drawScenery('rear', 0, true);
     drawStreetFurniture(0, true);
     ctx = previousCtx;
@@ -3593,6 +3657,79 @@
     [-1, 1].forEach((side) => {
       ctx.beginPath(); ctx.moveTo(x + side * 5, y - 25); ctx.quadraticCurveTo(x + side * 25, y - 6, x + side * 33, y + 1); ctx.stroke();
     });
+  }
+
+  function drawDistrictFoundations() {
+    ctx.save();
+    buildings.forEach((building) => {
+      const palette = {
+        gold: ['rgba(247,190,68,.24)', 'rgba(80,50,18,.20)'],
+        blue: ['rgba(68,196,255,.22)', 'rgba(17,60,89,.20)'],
+        purple: ['rgba(161,91,255,.24)', 'rgba(54,24,91,.22)'],
+        green: ['rgba(235,203,88,.21)', 'rgba(42,58,38,.22)'],
+        red: ['rgba(255,128,82,.22)', 'rgba(78,29,42,.23)'],
+      }[building.theme] || ['rgba(247,190,68,.2)', 'rgba(30,25,42,.2)'];
+      const bottomFacing = building.door.y < building.y;
+      const baseY = bottomFacing ? building.y + building.h * .45 : building.y + building.h * .35;
+      const padW = building.w * .92;
+      const padH = building.h * .35;
+      const glow = ctx.createRadialGradient(building.x, baseY, 12, building.x, baseY, padW * .62);
+      glow.addColorStop(0, palette[0]);
+      glow.addColorStop(.55, palette[1]);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.ellipse(building.x, baseY, padW * .58, padH * .72, 0, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = 'rgba(6,8,13,.64)';
+      ctx.beginPath();
+      ctx.moveTo(building.x - padW * .54, baseY - padH * .04);
+      ctx.lineTo(building.x - padW * .12, baseY - padH * .34);
+      ctx.lineTo(building.x + padW * .55, baseY - padH * .10);
+      ctx.lineTo(building.x + padW * .14, baseY + padH * .28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = palette[0];
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255,236,176,.11)';
+      ctx.lineWidth = 1;
+      for (let stripe = -2; stripe <= 2; stripe += 1) {
+        ctx.beginPath();
+        ctx.moveTo(building.x - padW * .36 + stripe * 24, baseY - padH * .05);
+        ctx.lineTo(building.x + padW * .12 + stripe * 24, baseY + padH * .17);
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+  }
+
+  function drawRoadsideDetails() {
+    ctx.save();
+    roads.forEach((road, roadIndex) => {
+      const dx = road.b.x - road.a.x, dy = road.b.y - road.a.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const angle = Math.atan2(dy, dx);
+      const nx = -dy / length, ny = dx / length;
+      const step = qualityLevel === 'low' ? 190 : qualityLevel === 'medium' ? 150 : 118;
+      for (let along = 44; along < length - 42; along += step) {
+        if ((Math.floor(along / step) + roadIndex) % 3 === 0) continue;
+        [-1, 1].forEach((side) => {
+          const x = road.a.x + Math.cos(angle) * along + nx * side * (road.width * .58 + 14);
+          const y = road.a.y + Math.sin(angle) * along + ny * side * (road.width * .58 + 14);
+          if (buildings.some((building) => x > building.body.x - 28 && x < building.body.x + building.body.w + 28 && y > building.body.y - 28 && y < building.body.y + building.body.h + 28)) return;
+          ctx.fillStyle = side > 0 ? 'rgba(18,35,30,.58)' : 'rgba(16,31,28,.48)';
+          ctx.beginPath(); ctx.ellipse(x, y + 4, 18, 7, angle, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(124,160,118,.20)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x - 7, y + 2); ctx.quadraticCurveTo(x - 2, y - 8, x + 4, y + 2);
+          ctx.moveTo(x + 1, y + 3); ctx.quadraticCurveTo(x + 6, y - 6, x + 11, y + 2);
+          ctx.stroke();
+        });
+      }
+    });
+    ctx.restore();
   }
 
   function drawBuilding(building, time) {
@@ -3952,7 +4089,14 @@
     ctx.strokeStyle = colorAlpha(edgeColor, .72); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = daily ? '#180923' : '#261400'; ctx.font = 'bold 17px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('R', 0, 1);
     ctx.fillStyle = 'rgba(255,255,255,.42)'; ctx.beginPath(); ctx.arc(-5, -7, 2.3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    ctx.save(); ctx.fillStyle = 'rgba(5,6,13,.93)'; ctx.beginPath(); roundedRect(ctx, coin.x - 48, coin.y - 56 + bounce, 96, 19, 6); ctx.fill(); ctx.strokeStyle = inRange ? edgeColor : daily ? 'rgba(211,160,255,.62)' : 'rgba(255,224,133,.58)'; ctx.lineWidth = inRange ? 2 : 1; ctx.stroke(); ctx.fillStyle = edgeColor; ctx.font = '900 8px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(reward ? 'RECOMPENSA DIÁRIA' : `${daily ? 'MOEDA DIÁRIA' : 'RICH COIN'} · ${coin.order}/${coin.total}`, coin.x, coin.y - 46.5 + bounce); ctx.restore();
+    if (inRange) {
+      ctx.save();
+      ctx.strokeStyle = edgeColor;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = .82;
+      ctx.beginPath(); ctx.ellipse(coin.x, coin.y + 22, 31, 9, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function drawMissionBeacon(time, objective) {
@@ -3975,8 +4119,14 @@
       ctx.fillStyle = core; ctx.beginPath(); ctx.arc(0, -10, 16, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#e4fbff'; ctx.font = '900 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('⌁', 0, -10);
     }
-    ctx.fillStyle = 'rgba(7,5,14,.9)'; ctx.beginPath(); roundedRect(ctx, -37, -55, 74, 17, 5); ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = edge; ctx.font = '900 8px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`${title} ${objective.order}/${objective.total}`, 0, -46);
+    ctx.fillStyle = 'rgba(7,5,14,.78)';
+    ctx.beginPath(); roundedRect(ctx, -16, 15, 32, 14, 5); ctx.fill();
+    ctx.strokeStyle = colorAlpha(edge, .58); ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = edge;
+    ctx.font = '900 8px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${objective.order}/${objective.total}`, 0, 22);
     ctx.restore();
   }
 
