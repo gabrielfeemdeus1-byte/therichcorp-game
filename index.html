@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#080713" />
+    <title>TheRichCorp — Cidade do Conhecimento</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <section class="portal" id="portal" aria-labelledby="portal-title">
+        <div class="portal-orbit orbit-one"></div>
+        <div class="portal-orbit orbit-two"></div>
+        <div class="portal-atmosphere" aria-hidden="true">
+          <div class="portal-moon"></div>
+          <div class="portal-skyline skyline-back"></div>
+          <div class="portal-skyline skyline-front"></div>
+          <div class="portal-road"><i></i><i></i><i></i></div>
+          <span class="portal-beacon beacon-one"></span>
+          <span class="portal-beacon beacon-two"></span>
+          <span class="portal-beacon beacon-three"></span>
+        </div>
+        <div class="portal-copy">
+          <div class="brand-lockup" aria-label="The Rich Corp">
+            <span class="brand-mark">R</span>
+            <div>
+              <p class="eyebrow">THE RICH CORP</p>
+              <h1 id="portal-title">Conhecimento que<br />transforma.</h1>
+            </div>
+          </div>
+          <p class="portal-description">
+            Entre na cidade onde estratégia vira progresso. Explore, descubra e construa a sua evolução.
+          </p>
+          <div class="portal-values" aria-label="Etapas da jornada">
+            <span><b>01</b> Explore</span>
+            <span><b>02</b> Aprenda</span>
+            <span><b>03</b> Evolua</span>
+          </div>
+          <div class="portal-signal" aria-hidden="true"><i></i><span>RICH CITY · SINAL ATIVO</span></div>
+          <p class="portal-quote">“Não é sorte. É método, estratégia e conhecimento.”</p>
+        </div>
+
+        <div class="login-card">
+          <div class="login-console" aria-hidden="true">
+            <span><i></i> PORTAL ONLINE</span>
+            <small>RICH CITY / SETOR 01</small>
+          </div>
+          <div class="card-heading">
+            <p class="eyebrow">SEU ACESSO</p>
+            <h2>Bem-vindo de volta</h2>
+            <p>Entre para continuar sua jornada na TheRichCorp.</p>
+          </div>
+          <form id="login-form" novalidate>
+            <label>
+              <span>E-mail</span>
+              <input id="email" name="email" autocomplete="email" type="email" placeholder="voce@exemplo.com" required />
+            </label>
+            <label>
+              <span>Senha</span>
+              <div class="password-field">
+                <input id="password" name="password" autocomplete="current-password" type="password" placeholder="Sua senha" required />
+                <button class="text-button password-toggle" id="password-toggle" type="button" aria-label="Mostrar senha">Mostrar</button>
+              </div>
+            </label>
+            <div class="login-options">
+              <label class="check-label"><input type="checkbox" id="remember" checked /> <span>Lembrar-me</span></label>
+              <button class="text-button" type="button" id="recovery">Esqueci minha senha</button>
+            </div>
+            <p class="form-message" id="form-message" aria-live="polite"></p>
+            <button class="primary-button" type="submit">Entrar na cidade <span>→</span></button>
+          </form>
+          <div class="separator"><span>ou</span></div>
+          <button class="google-button" type="button" id="google-login"><span class="google-g">G</span> Continuar com Google</button>
+          <p class="login-footer">Primeira vez aqui? <button class="text-button" id="signup" type="button">Criar conta</button></p>
+          <p class="local-note" id="login-environment-note">Ambiente local de demonstração — o acesso abre a experiência jogável.</p>
+        </div>
+      </section>
+
+      <section class="entry-transition" id="entry-transition" aria-live="polite" hidden>
+        <div class="transition-ring"><span>R</span></div>
+        <p class="eyebrow">ACESSO CONCEDIDO</p>
+        <h2>Preparando The Rich City</h2>
+        <p>O seu próximo passo começa agora.</p>
+      </section>
+
+      <main class="game-screen" id="game-screen" hidden aria-label="The Rich City">
+        <canvas id="world" aria-label="Mapa explorável da The Rich City"></canvas>
+        <div class="game-grade" aria-hidden="true"></div>
+        <div class="screen-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+        <header class="hud hud-top" aria-label="Informações do jogador">
+          <div class="hud-left">
+            <div class="hud-brand" aria-label="The Rich Corp, Rich City setor 01">
+              <span class="mini-mark">R</span>
+              <span class="hud-brand-copy"><small>THE RICH CORP</small><strong>RICH CITY <em>• SETOR 01</em></strong></span>
+            </div>
+            <div class="player-chip">
+              <span class="avatar-dot" aria-hidden="true"><i></i></span>
+              <div class="player-chip-copy"><b id="hud-player-name">Gabriel</b><small id="hud-level">Nível 1 · 0 XP</small></div>
+            </div>
+          </div>
+          <div class="hud-right">
+            <div class="wallet-chip"><span class="coin-icon">R</span><b id="hud-coins">0</b><small>RICH COINS</small></div>
+            <div class="bucks-chip" id="hud-bucks" aria-label="0 Rich Bucks">
+              <span class="bucks-icon" aria-hidden="true">B</span>
+              <span class="bucks-copy"><b id="hud-bucks-value">0</b><small>RICH BUCKS</small></span>
+            </div>
+            <span class="district-chip"><i></i> DISTRITO CENTRAL</span>
+          </div>
+        </header>
+
+        <aside class="quest-card" aria-label="Missão atual">
+          <span class="quest-rail" aria-hidden="true"></span>
+          <div class="quest-copy">
+            <span class="quest-kicker">MISSÃO ATUAL</span>
+            <strong id="quest-title">Encontre Rick em frente à sede.</strong>
+            <p id="quest-detail">Aproxime-se dele e pressione E para conversar.</p>
+            <div class="starter-goal" id="starter-goal" aria-label="Meta da Rich Starter">
+              <span><b id="starter-goal-current">0</b> / <b id="starter-goal-target">5.000</b> Rich Coins</span>
+              <i><em id="starter-goal-bar"></em></i>
+            </div>
+          </div>
+        </aside>
+
+        <div class="world-label label-hq">SEDE THE RICH CORP</div>
+        <div class="world-label label-lab">DIGITAL LAB</div>
+        <div class="world-label label-prospection">PROSPECÇÃO</div>
+        <div class="world-label label-content">CONTEÚDOS</div>
+        <div class="world-label label-store">LOJA RICH BUCKS</div>
+        <div class="world-label label-free-coins">RICH COINS GRÁTIS</div>
+        <div class="world-label label-challenges">DESAFIOS</div>
+
+        <div class="interaction-prompt" id="interaction-prompt" hidden>
+          <kbd>E</kbd><span id="interaction-copy">Interagir</span>
+        </div>
+
+        <div class="dialogue" id="dialogue" hidden role="dialog" aria-modal="true" aria-label="Diálogo">
+          <div class="dialogue-portrait" id="dialogue-portrait">R</div>
+          <div class="dialogue-copy">
+            <span id="dialogue-speaker">RICK</span>
+            <p id="dialogue-text"></p>
+            <small><kbd>E</kbd> continuar &nbsp;·&nbsp; <kbd>Esc</kbd> fechar</small>
+          </div>
+        </div>
+
+        <section class="knowledge-panel" id="knowledge-panel" hidden role="dialog" aria-modal="true" aria-labelledby="knowledge-title">
+          <div class="knowledge-seal" aria-hidden="true"><span>D</span><b>01</b></div>
+          <div class="knowledge-copy">
+            <p class="eyebrow">CONTEÚDOS · FUNDAMENTOS</p>
+            <h2 id="knowledge-title">Digital 01</h2>
+            <p class="knowledge-summary">Transforme intenção em direção: posicione sua oferta, entenda o seu público e defina a próxima ação mensurável.</p>
+            <div class="knowledge-topics" aria-label="Tópicos do Digital 01">
+              <span>Posicionamento</span><span>Oferta</span><span>Primeiro funil</span>
+            </div>
+            <div class="knowledge-price"><span class="coin-icon">R</span><strong><b id="knowledge-cost">75</b> Rich Coins</strong></div>
+            <p class="knowledge-status" id="knowledge-status"></p>
+            <small id="knowledge-action"><kbd>E</kbd> / ação desbloquear &nbsp;·&nbsp; <kbd>Esc</kbd> voltar à cidade</small>
+          </div>
+        </section>
+
+        <section class="lab-panel" id="lab-panel" hidden role="dialog" aria-modal="true" aria-labelledby="lab-title">
+          <div class="lab-core" aria-hidden="true"><span>D</span><b>02</b></div>
+          <div class="lab-copy">
+            <p class="eyebrow">DIGITAL LAB · TRILHA PRÁTICA</p>
+            <h2 id="lab-title">Digital 02: Prospecção</h2>
+            <p class="lab-summary">Converta observação em oportunidade: identifique o perfil ideal, organize sinais de interesse e construa a sua abordagem inicial.</p>
+            <div class="lab-topics" aria-label="Tópicos do Digital 02">
+              <span>Perfil ideal</span><span>Sinais de compra</span><span>Abordagem</span>
+            </div>
+            <div class="lab-price"><span class="coin-icon">R</span><strong><b id="lab-cost">50</b> Rich Coins</strong></div>
+            <p class="lab-status" id="lab-status"></p>
+            <small id="lab-action"><kbd>E</kbd> / ação desbloquear &nbsp;·&nbsp; <kbd>Esc</kbd> voltar à cidade</small>
+          </div>
+        </section>
+
+        <section class="learning-panel" id="learning-panel" hidden role="dialog" aria-modal="true" aria-labelledby="learning-title" aria-describedby="learning-text learning-question">
+          <div class="learning-accent" aria-hidden="true"><span>R</span><i></i><i></i><i></i></div>
+          <div class="learning-copy">
+            <div class="learning-topline">
+              <p class="eyebrow" id="learning-kicker">MISSÃO DE APRENDIZADO</p>
+              <span class="learning-stage" id="learning-stage">ETAPA 1 DE 3</span>
+            </div>
+            <h2 id="learning-title">Radar de Oportunidades</h2>
+            <p class="learning-text" id="learning-text">Antes de agir, observe o que impede uma pessoa de avançar. Uma oportunidade começa em um problema claro.</p>
+            <ul class="learning-bullets" id="learning-bullets" aria-label="Pontos-chave desta etapa">
+              <li>Procure problemas frequentes, caros ou demorados.</li>
+              <li>Identifique quem sente esse problema primeiro.</li>
+              <li>Transforme observação em uma hipótese prática.</li>
+            </ul>
+            <div class="learning-question-block" id="learning-question-block">
+              <span class="learning-question-kicker">DECISÃO DE CAMPO</span>
+              <p class="learning-question" id="learning-question">Qual sinal demonstra uma oportunidade mais forte?</p>
+              <div class="learning-choices" id="learning-choices" role="radiogroup" aria-labelledby="learning-question">
+                <button class="learning-choice is-selected" id="learning-choice-0" type="button" role="radio" aria-checked="true" tabindex="0" data-learning-choice="0">
+                  <span class="learning-choice-key" aria-hidden="true">A</span>
+                  <span class="learning-choice-copy"><b>Um elogio isolado</b><small>Alguém gostou de uma ideia uma única vez.</small></span>
+                </button>
+                <button class="learning-choice" id="learning-choice-1" type="button" role="radio" aria-checked="false" tabindex="-1" data-learning-choice="1">
+                  <span class="learning-choice-key" aria-hidden="true">B</span>
+                  <span class="learning-choice-copy"><b>Uma dor recorrente</b><small>Várias pessoas tentam resolver o mesmo problema.</small></span>
+                </button>
+                <button class="learning-choice" id="learning-choice-2" type="button" role="radio" aria-checked="false" tabindex="-1" data-learning-choice="2">
+                  <span class="learning-choice-key" aria-hidden="true">C</span>
+                  <span class="learning-choice-copy"><b>Uma tendência aleatória</b><small>Algo parece popular, mas sem necessidade comprovada.</small></span>
+                </button>
+              </div>
+            </div>
+            <footer class="learning-footer">
+              <span class="learning-progress" id="learning-progress"><i></i><i></i><i></i></span>
+              <small id="learning-controls"><kbd>←</kbd><kbd>→</kbd> escolher &nbsp;·&nbsp; <kbd>E</kbd> confirmar &nbsp;·&nbsp; <kbd>Esc</kbd> voltar</small>
+            </footer>
+          </div>
+        </section>
+
+        <section class="mentorship-panel" id="mentorship-panel" hidden role="dialog" aria-modal="true" aria-labelledby="mentorship-title" aria-describedby="mentorship-summary mentorship-status">
+          <div class="mentorship-sigil" aria-hidden="true">
+            <span>M</span><i></i><i></i><i></i>
+            <small>R</small>
+          </div>
+          <div class="mentorship-copy">
+            <div class="mentorship-topline">
+              <p class="eyebrow" id="mentorship-kicker">MENTORIAS · PRÓXIMO NÍVEL</p>
+              <span class="mentorship-stage" id="mentorship-stage">PDFS · ENTRADA</span>
+            </div>
+
+            <div class="mentorship-offerings" id="mentorship-offerings" role="radiogroup" aria-label="Mentorias disponíveis">
+              <button class="mentorship-option is-selected" type="button" role="radio" aria-checked="true" tabindex="0" data-mentorship="pdfs">
+                <span class="mentorship-option-mark">ST</span><span><b>Rich Starter</b><small>Farmável</small></span>
+              </button>
+              <button class="mentorship-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-mentorship="silver">
+                <span class="mentorship-option-mark">S</span><span><b>Rich Silver</b><small>Fundação</small></span>
+              </button>
+              <button class="mentorship-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-mentorship="gold">
+                <span class="mentorship-option-mark">G</span><span><b>Rich Gold</b><small>Construção</small></span>
+              </button>
+              <button class="mentorship-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-mentorship="diamond">
+                <span class="mentorship-option-mark">D</span><span><b>Rich Diamond</b><small>Completa</small></span>
+              </button>
+            </div>
+
+            <h2 id="mentorship-title">Rich Starter</h2>
+            <p class="mentorship-summary" id="mentorship-summary">Aprenda a vender PDFs simples com oferta clara, página objetiva e rotina de divulgação.</p>
+
+            <div class="mentorship-price" id="mentorship-price" aria-label="Preço da mentoria">
+              <span class="coin-icon mentorship-coin">R</span>
+              <strong><b>5.000</b> Rich Coins</strong>
+            </div>
+
+            <ul class="mentorship-modules" id="mentorship-modules" aria-label="Módulos da mentoria selecionada">
+              <li><span>01</span> Encontrar uma dor que vale resolver</li>
+              <li><span>02</span> Validar a oferta antes de escalar</li>
+              <li><span>03</span> Vender low ticket na prática</li>
+            </ul>
+
+            <div class="mentorship-methods" id="mentorship-methods" role="radiogroup" aria-label="Forma de desbloqueio">
+              <button class="mentorship-method is-selected" type="button" role="radio" aria-checked="true" tabindex="0" data-mentorship-method="coins">
+                <span class="coin-icon">R</span><span><b>Trocar Rich Coins</b><small>Use o saldo conquistado no jogo</small></span>
+              </button>
+              <button class="mentorship-method" type="button" role="radio" aria-checked="false" tabindex="-1" data-mentorship-method="bucks">
+                <span class="bucks-icon">B</span><span><b>Rich Bucks + PIX</b><small>Adicione saldo e confirme pelo PIX</small></span>
+              </button>
+            </div>
+
+            <p class="mentorship-status" id="mentorship-status">Escolha uma forma de acesso. Você confirma tudo usando <kbd>E</kbd>.</p>
+            <footer class="mentorship-footer">
+              <span class="mentorship-progress" id="mentorship-progress" aria-label="Progresso pelo catálogo"></span>
+              <small id="mentorship-controls"><kbd>←</kbd><kbd>→</kbd> mentoria &nbsp;·&nbsp; <kbd>↑</kbd><kbd>↓</kbd> acesso &nbsp;·&nbsp; <kbd>E</kbd> confirmar &nbsp;·&nbsp; <kbd>Esc</kbd> voltar</small>
+            </footer>
+          </div>
+        </section>
+
+        <section class="bucks-store-panel" id="bucks-store-panel" hidden role="dialog" aria-modal="true" aria-labelledby="bucks-store-title" aria-describedby="bucks-store-summary bucks-store-status">
+          <div class="bucks-store-sigil" aria-hidden="true">
+            <span>B</span><i></i><i></i><i></i>
+            <small>RICH BUCKS</small>
+          </div>
+          <div class="bucks-store-copy">
+            <div class="bucks-store-topline">
+              <p class="eyebrow" id="bucks-store-kicker">CARTEIRA · ADICIONAR SALDO</p>
+              <span class="bucks-store-stage" id="bucks-store-stage">ESCOLHA UM PACOTE</span>
+            </div>
+
+            <h2 id="bucks-store-title">Loja de Rich Bucks</h2>
+            <p class="bucks-store-summary" id="bucks-store-summary">Escolha quanto saldo deseja adicionar. Cada Rich Buck equivale a R$ 1,00 no checkout PIX.</p>
+
+            <div class="bucks-store-packs" id="bucks-store-packs" role="radiogroup" aria-label="Pacotes de Rich Bucks">
+              <button class="bucks-pack is-selected" type="button" role="radio" aria-checked="true" tabindex="0" data-bucks-pack="50">
+                <span class="bucks-pack-icon bucks-icon" aria-hidden="true">B</span>
+                <span class="bucks-pack-copy"><b>50 Rich Bucks</b><small>Saldo para sua jornada</small></span>
+                <strong>R$ 50,00</strong>
+              </button>
+              <button class="bucks-pack" type="button" role="radio" aria-checked="false" tabindex="-1" data-bucks-pack="100">
+                <span class="bucks-pack-icon bucks-icon" aria-hidden="true">B</span>
+                <span class="bucks-pack-copy"><b>100 Rich Bucks</b><small>Saldo para sua jornada</small></span>
+                <strong>R$ 100,00</strong>
+              </button>
+              <button class="bucks-pack" type="button" role="radio" aria-checked="false" tabindex="-1" data-bucks-pack="250">
+                <span class="bucks-pack-icon bucks-icon" aria-hidden="true">B</span>
+                <span class="bucks-pack-copy"><b>250 Rich Bucks</b><small>Saldo para sua jornada</small></span>
+                <strong>R$ 250,00</strong>
+              </button>
+              <button class="bucks-pack" type="button" role="radio" aria-checked="false" tabindex="-1" data-bucks-pack="500">
+                <span class="bucks-pack-icon bucks-icon" aria-hidden="true">B</span>
+                <span class="bucks-pack-copy"><b>500 Rich Bucks</b><small>Saldo para sua jornada</small></span>
+                <strong>R$ 500,00</strong>
+              </button>
+            </div>
+
+            <div class="bucks-store-checkout" id="bucks-store-checkout" aria-live="polite">
+              <span class="bucks-store-checkout-label"><i aria-hidden="true"></i> CHECKOUT PIX</span>
+              <div>
+                <strong id="bucks-store-checkout-title">Aguardando conexão segura</strong>
+                <p id="bucks-store-checkout-copy">Nenhuma cobrança será criada e nenhum Rich Buck será creditado até a confirmação segura do pagamento.</p>
+              </div>
+              <button class="bucks-store-pending" type="button" disabled aria-disabled="true">Checkout em preparação</button>
+            </div>
+
+            <p class="bucks-store-status" id="bucks-store-status">Selecione um pacote com <kbd>←</kbd> <kbd>→</kbd>. Use <kbd>E</kbd> para iniciar o checkout quando ele estiver conectado.</p>
+            <footer class="bucks-store-footer">
+              <span class="bucks-store-progress" id="bucks-store-progress" aria-label="Pacote selecionado"><i class="is-active"></i><i></i><i></i><i></i></span>
+              <small id="bucks-store-controls"><kbd>←</kbd><kbd>→</kbd> pacote &nbsp;·&nbsp; <kbd>E</kbd> continuar &nbsp;·&nbsp; <kbd>Esc</kbd> voltar</small>
+            </footer>
+          </div>
+        </section>
+
+        <section class="free-coins-panel" id="free-coins-panel" hidden role="dialog" aria-modal="true" aria-labelledby="free-coins-title" aria-describedby="free-coins-summary free-coins-status">
+          <div class="free-coins-sigil" aria-hidden="true">
+            <span>R</span>
+            <small>FREE COINS</small>
+            <i></i><i></i><i></i>
+          </div>
+          <div class="free-coins-copy">
+            <div class="free-coins-topline">
+              <p class="eyebrow" id="free-coins-kicker">CENTRAL · GANHE RICH COINS GRÁTIS</p>
+              <span class="free-coins-stage" id="free-coins-stage">MISSÃO 1 DE 4</span>
+            </div>
+            <h2 id="free-coins-title">Ganhe Rich Coins grátis</h2>
+            <p class="free-coins-summary" id="free-coins-summary">Complete pequenas ações da comunidade TheRichCorp e resgate Rich Coins para acelerar sua jornada.</p>
+
+            <div class="free-coins-list" id="free-coins-list" role="radiogroup" aria-label="Mini-missões para ganhar Rich Coins"></div>
+
+            <p class="free-coins-status" id="free-coins-status">Escolha uma mini-missão com <kbd>←</kbd> <kbd>→</kbd>. Use <kbd>E</kbd> para abrir ou resgatar.</p>
+            <footer class="free-coins-footer">
+              <span class="free-coins-progress" id="free-coins-progress" aria-label="Mini-missão selecionada"><i class="is-active"></i><i></i><i></i><i></i></span>
+              <small id="free-coins-controls"><kbd>←</kbd><kbd>→</kbd> missão &nbsp;·&nbsp; <kbd>E</kbd> continuar &nbsp;·&nbsp; <kbd>Esc</kbd> voltar</small>
+            </footer>
+          </div>
+        </section>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <div class="controls-help"><kbd>WASD</kbd> / <kbd>setas</kbd> caminhar <span>·</span> <kbd>Shift</kbd> correr <span>·</span> aproxime-se e pressione <kbd>E</kbd></div>
+
+        <div class="touch-controls" aria-label="Controles móveis">
+          <div class="joystick" id="joystick">
+            <button data-touch="up" aria-label="Cima">▲</button>
+            <button data-touch="left" aria-label="Esquerda">◀</button>
+            <button data-touch="down" aria-label="Baixo">▼</button>
+            <button data-touch="right" aria-label="Direita">▶</button>
+          </div>
+          <button class="touch-action" id="touch-action" aria-label="Interagir">E</button>
+        </div>
+      </main>
+    </div>
+    <script src="online-auth.js" defer></script>
+    <script src="game.js" defer></script>
+  </body>
+</html>
